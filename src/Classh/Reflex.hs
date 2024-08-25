@@ -1,7 +1,12 @@
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE FlexibleContexts #-}
+
 module Classh.Reflex where
 
--- temp file for Reflex specific classh
+import Reflex.Dom.Core
+import Classh
 
+import qualified Data.Text as T
 
 intercalate :: DomBuilder t m => WhenTW TextSize -> T.Text -> [m ()] -> m ()
 intercalate size inter (t:ts) = do
