@@ -2,7 +2,7 @@
 , text
 }:
 mkDerivation {
-  pname = "ClasshSS";
+  pname = "reflex-classhss";
   version = "0.1.0.0";
   src = ./.;
   libraryHaskellDepends = [
