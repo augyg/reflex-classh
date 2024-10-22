@@ -38,6 +38,7 @@ responsiveRowCol colSpans m =
   in elClass "div" spandex m
 
 
+
 -- | Not real: just ideating
 -- | How can we model a discrete set of consistent brand options?
 --
@@ -97,6 +98,9 @@ row paddingF = elClass "div" ( "" <&> showTW (applyFs def paddingF) )
 gridCol :: DomBuilder t m => ColInt -> m a -> m a
 gridCol cInt ma = elClass "div" ("grid grid-cols-" <> showTW cInt) ma
 
+gridCol' :: DomBuilder t m => ColInt -> T.Text -> m a -> m a
+gridCol' cInt custom ma = elClass "div" ("grid grid-cols-" <> showTW cInt <&> custom) ma
+
 -- | TODO: styledParagraphs :: [( BottomPadding, [(tw,T.Text)])] -> m ()
 -- then apply to bannerFor in Landing.*
 
@@ -150,3 +154,70 @@ elDynTW' tag cfgDyn m = elDynClass' tag ( (\cfg -> defaultClasses <> " " <> show
 -- styledTexts' :: (ShowTW tw, DomBuilder t m) => [(tw, T.Text)] -> m ()
 -- styledTexts' styTexs = el "div" $ forM_ styTexs $ \(cfg, txt) -> styledText' cfg txt
 
+responsiveCol :: DomBuilder t m => [Int] -> m a -> m a 
+responsiveCol = responsiveRowCol
+
+
+-- | Shouldn't it be assumed that its responsive? that is the whole point of Classh really
+col :: DomBuilder t m => [Int] -> m a -> m a
+col = responsiveRowCol
+
+-- | TODO: with animations
+colDyn :: forall a t m.
+  ( PostBuild t m
+  , DomBuilder t m
+  )
+  => Dynamic t [Int]
+  -> m a
+  -> m a
+colDyn dynCols m = 
+  let
+    spandex = ffor dynCols $ \(colSpans) ->      
+      renderWhenTWRank2
+      (zipScreens colSpans)
+      (\condition c ->
+         if c == 0
+         then twWhenText condition ("col-span-" <> tshow c) <&> twWhenText condition "hidden"
+         else twWhenText condition ("col-span-" <> tshow c) <&> twWhenText condition "block" -- negate hidden if shown on larger size
+         
+      )
+  in elDynClass "div" spandex m
+
+
+-- | If we look at Width and height of CSS Boxes as Categories then there are 2 main ones on either end
+-- | 1) Assume Height == HeightOfContents
+-- | 2) Assume Height == HeightOfContainer
+-- | and this is true for width as well, but this is handled by the argument which is logical since
+-- | responsiveness has a far bigger bearing on width
+col' :: DomBuilder t m => [Int] -> m a -> m a
+col' colSpans m = 
+  let
+    spandex = renderWhenTW (zipScreens colSpans) ((<>) "col-span-" . tshow)
+    height = $(classh' [h .~~ TWSize_Full])
+  in elClass "div" (height <&> spandex) m
+  
+
+colFrom :: DomBuilder t m => [(Int,Int)] -> m a -> m a
+colFrom colsCfg m =
+  let
+    (colStarts, colSpans) = unzip colsCfg
+    spandex = renderWhenTW (zipScreens colSpans) ((<>) "col-span-" . tshow)
+    startdex = renderWhenTW (zipScreens colStarts) ((<>) "col-start-" . tshow)
+  in elClass "div" (spandex <&> startdex) m
+
+
+-- | There are ways that
+place
+  :: DomBuilder t m
+  => Dimensions
+  -> WhenTW (Justify, Align)
+  -> m a
+  -> m a
+place boxSize p ma = do
+  elClass "div" (classhUnsafe [w .~~ (pct 100), h .~~ (pct 100), pos .~ p]) $ do
+    --elClass "div" (classhUnsafe [pos .~ p]) $
+    elClass "div" (classhUnsafe [w .~ fst boxSize, h .~ snd boxSize]) ma
+
+
+xPaddedRegion :: DomBuilder t m => m a -> m a
+xPaddedRegion ma = gridCol Col12 $ elClass "div" $(classh' [colStart .~~ 2, colSpan .~~ 10]) $ ma
