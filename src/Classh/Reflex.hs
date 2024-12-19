@@ -3,41 +3,56 @@
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE RankNTypes #-}
 
-module Classh.Reflex where
+--------------------------------------------------------------------------------
+-- |
+--  Module      :  Classh.Reflex.Layout
+--  Copyright   :  (c) 2024, Galen Sprout
+--  License     :  BSD-style (see end of this file)
+--
+--  Maintainer  :  Galen Sprout <galen.sprout@gmail.com>
+--  Stability   :  provisional
+--  Portability :  portable
+--
+--  A collection of patterns that have emerged from usage of ClasshSS in order to reduce the amount of
+--  code necessary to build beautiful UIs that will be easier to maintain.
+--
+--  For example, lets use grids to show 3 components (just text here) that on mobile and
+--  tablet(sm) will take up the full row, and at larger sizes take up 3\/12 width, 4\/12 width, and 5\/12 width
+--  respectively.
+--
+--  Let's also pretend this is a landing page and we want all rows evenly spaced, we can make this obvious
+--  with 'row'
+-- 
+-- @
+--   {-# LANGUAGE OverloadedStrings #-}
+--   {-# LANGUAGE FlexibleContexts #-}
+--   module Main where
+--
+--   import Reflex.Dom.Core
+--   import Classh
+--   
+--   mySimpleResponsivePage :: DomBuilder t m => m ()
+--   mySimpleResponsivePage = do 
+--     row [y .~~ TWSize 10] $ do 
+--       gridCol Col12 $ do
+--         col [12,12,3] $ normalText "hey"
+--         col [12,12,4] $ normalText "hello"
+--         col [12,12,5] $ normalText "howdy"
+--     where
+--        normalText = textS $(classh' [text_size .|~ [LG, XL, XL2, XL3] ] )
+-- @
+--
+-- 
+-------------------------------------------------------------------------------
 
-import Reflex.Dom.Core
-import Classh
 
-import qualified Data.Text as T
+module Classh.Reflex ( module X) where
 
-intercalate :: DomBuilder t m => WhenTW TextSize -> T.Text -> [m ()] -> m ()
-intercalate size inter (t:ts) = do
-  t >> prependAll size inter ts
-  where
-    prependAll _ _ [] = pure ()
-    prependAll s i (t:ts) = elClass "span" (renderWhenTW s showTW ) (text i) >> t >> prependAll s i ts
+import Classh.Reflex.El as X
+import Classh.Reflex.Text as X
+import Classh.Reflex.Place as X
+import Classh.Reflex.Layout as X
 
--- | Works by setting top padding by one consistent value. Does not add padding for first element
-paragraphs :: DomBuilder t m => WhenTW TWSize -> [m ()] -> m ()
-paragraphs spacing (r:rows) = do
-  row [] $ r
-  withTopPadding spacing rows
-  where
-    withTopPadding _ [] = pure ()
-    withTopPadding p (r:rs) = row [t .~ p] r >> withTopPadding p rs
-
--- | Works by setting top padding variably
-paragraphs' :: DomBuilder t m => [(WhenTW TWSize, m ())] -> m ()
-paragraphs' ((s,r):rows) = row [t .~ s] r >> paragraphs' rows
-
-rows :: DomBuilder t m => [(WhenTW TWSize, m ())] -> m ()
-rows = paragraphs'
-
--- | TODO: should we have a variant which controls for padding needs when being a full row? What should that look like? Do we even need that??
-responsiveRowCol :: DomBuilder t m => [Int] -> m a -> m a
-responsiveRowCol colSpans m =
-  let spandex = renderWhenTW (zipScreens colSpans) ((<>) "col-span-" . tshow)
-  in elClass "div" spandex m
 
 
 
@@ -71,56 +86,14 @@ responsiveRowCol colSpans m =
 -- and note: lets say 90% of titles should have Bold as their weight, we can set this and
 
 
--- | TODO: this should have the ability to add rows somehow
--- | and how we can think of this is that if we start at a large->Col12 and scale down to
--- | lets say a 'sm' then Col12 / n where n is from config. So lets say n=2 then sm->Col6 which will show up as
--- | 2 rows of 6; similarly n=6 => 6 rows of 2 ; n=12 -> 12 rows of 1; n=3 => 3 rows of 4 ; n=4 => 4 rows of 3
-gridColWhen :: DomBuilder t m => WhenTW ColInt -> m a -> m a
-gridColWhen cInts ma = elClass "div" (showCInts cInts) ma
-  where
-    showCInts [] = ""
-    showCInts (("def",cInt):cInts) = "grid grid-cols-" <> showTW cInt <&> showCInts cInts
-    showCInts ((w,cInt):cInts) = w <> ":" <> "grid" <&> w <> ":" <> "grid-cols-" <> showTW cInt
-                                 <&> showCInts cInts
-
--- | Denotes a normal row. Does not have inline-block
--- row :: DomBuilder t m => BoxPadding -> m a -> m a
--- row padding = elClass "div" ( "" <&> showTW padding )
-
-gridColW :: DomBuilder t m => ColInt -> TWSizeOrFraction -> m a -> m a
-gridColW cInt width ma = elClass "div" ("grid grid-cols-" <> showTW cInt <&> ("w-" <> showTW width)) ma
 
 
 
-row :: DomBuilder t m => [BoxPadding -> BoxPadding] -> m a -> m a
-row paddingF = elClass "div" ( "" <&> showTW (applyFs def paddingF) )
 
 
--- | Purposefully designed to take no other data besides ColInt in order to be very self-contained
-gridCol :: DomBuilder t m => ColInt -> m a -> m a
-gridCol cInt ma = elClass "div" ("grid grid-cols-" <> showTW cInt) ma
-
-gridCol' :: DomBuilder t m => ColInt -> T.Text -> m a -> m a
-gridCol' cInt custom ma = elClass "div" ("grid grid-cols-" <> showTW cInt <&> custom) ma
 
 -- | TODO: styledParagraphs :: [( BottomPadding, [(tw,T.Text)])] -> m ()
 -- then apply to bannerFor in Landing.*
-
--- | TODO: variants which do not get checked/compiled
-textS :: DomBuilder t m => CompiledS -> T.Text -> m ()
-textS s txt = elClass "span" s $ text txt
-
-textU :: DomBuilder t m => CompiledS -> T.Text -> m ()
-textU s txt = elClass "u" s $ text txt
-
-textDynS :: (PostBuild t m, DomBuilder t m) => Dynamic t CompiledS -> T.Text -> m ()
-textDynS s txt = elDynClass "span" s $ text txt
-
-dynTextS :: (PostBuild t m, DomBuilder t m) => CompiledS -> Dynamic t T.Text -> m ()
-dynTextS s txt = elClass "span" s $ dynText txt
-
-dynTextDynS :: (PostBuild t m, DomBuilder t m) => Dynamic t CompiledS -> Dynamic t T.Text -> m ()
-dynTextDynS s txt = elDynClass "span" s $ dynText txt
 
 
 -- buttonC :: Map.Map T.Text T.Text -> m a -> m (Event t a)
@@ -129,17 +102,6 @@ dynTextDynS s txt = elDynClass "span" s $ dynText txt
 --   pure $ x <$ domEvent Click e
 
 
-elTW :: DomBuilder t m => T.Text -> BoxConfig -> m a -> m a
-elTW tag cfg m = elClass tag (defaultClasses <> " " <> showTW cfg) m
-
-elTW' :: DomBuilder t m => T.Text -> BoxConfig -> m a -> m (Element EventResult (DomBuilderSpace m) t, a)
-elTW' tag cfg m = elClass' tag (defaultClasses <> " " <> showTW cfg) m
-
-elDynTW :: (PostBuild t m, DomBuilder t m) => T.Text -> Dynamic t BoxConfig -> m a -> m a
-elDynTW tag cfgDyn m = elDynClass tag ( (\cfg -> defaultClasses <> " " <> showTW cfg) <$> cfgDyn ) m
-
-elDynTW' :: (PostBuild t m, DomBuilder t m) => T.Text -> Dynamic t BoxConfig -> m a -> m (Element EventResult (DomBuilderSpace m) t, a)
-elDynTW' tag cfgDyn m = elDynClass' tag ( (\cfg -> defaultClasses <> " " <> showTW cfg) <$> cfgDyn ) m
 
 -- textTW' :: (DomBuilder t m, ShowTW tw) => tw -> T.Text -> m ()
 -- textTW' = styledText'
@@ -156,70 +118,4 @@ elDynTW' tag cfgDyn m = elDynClass' tag ( (\cfg -> defaultClasses <> " " <> show
 -- styledTexts' :: (ShowTW tw, DomBuilder t m) => [(tw, T.Text)] -> m ()
 -- styledTexts' styTexs = el "div" $ forM_ styTexs $ \(cfg, txt) -> styledText' cfg txt
 
-responsiveCol :: DomBuilder t m => [Int] -> m a -> m a 
-responsiveCol = responsiveRowCol
 
-
--- | Shouldn't it be assumed that its responsive? that is the whole point of Classh really
-col :: DomBuilder t m => [Int] -> m a -> m a
-col = responsiveRowCol
-
--- | TODO: with animations
-colDyn :: forall a t m.
-  ( PostBuild t m
-  , DomBuilder t m
-  )
-  => Dynamic t [Int]
-  -> m a
-  -> m a
-colDyn dynCols m = 
-  let
-    spandex = ffor dynCols $ \(colSpans) ->      
-      renderWhenTWRank2
-      (zipScreens colSpans)
-      (\condition c ->
-         if c == 0
-         then twWhenText condition ("col-span-" <> tshow c) <&> twWhenText condition "hidden"
-         else twWhenText condition ("col-span-" <> tshow c) <&> twWhenText condition "block" -- negate hidden if shown on larger size
-         
-      )
-  in elDynClass "div" spandex m
-
-
--- | If we look at Width and height of CSS Boxes as Categories then there are 2 main ones on either end
--- | 1) Assume Height == HeightOfContents
--- | 2) Assume Height == HeightOfContainer
--- | and this is true for width as well, but this is handled by the argument which is logical since
--- | responsiveness has a far bigger bearing on width
-col' :: DomBuilder t m => [Int] -> m a -> m a
-col' colSpans m = 
-  let
-    spandex = renderWhenTW (zipScreens colSpans) ((<>) "col-span-" . tshow)
-    height = $(classh' [h .~~ TWSize_Full])
-  in elClass "div" (height <&> spandex) m
-  
-
-colFrom :: DomBuilder t m => [(Int,Int)] -> m a -> m a
-colFrom colsCfg m =
-  let
-    (colStarts, colSpans) = unzip colsCfg
-    spandex = renderWhenTW (zipScreens colSpans) ((<>) "col-span-" . tshow)
-    startdex = renderWhenTW (zipScreens colStarts) ((<>) "col-start-" . tshow)
-  in elClass "div" (spandex <&> startdex) m
-
-
--- | There are ways that
-place
-  :: DomBuilder t m
-  => Dimensions
-  -> WhenTW (Justify, Align)
-  -> m a
-  -> m a
-place boxSize p ma = do
-  elClass "div" (classhUnsafe [w .~~ (pct 100), h .~~ (pct 100), pos .~ p]) $ do
-    --elClass "div" (classhUnsafe [pos .~ p]) $
-    elClass "div" (classhUnsafe [w .~ fst boxSize, h .~ snd boxSize]) ma
-
-
-xPaddedRegion :: DomBuilder t m => m a -> m a
-xPaddedRegion ma = gridCol Col12 $ elClass "div" $(classh' [colStart .~~ 2, colSpan .~~ 10]) $ ma
