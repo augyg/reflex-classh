@@ -1,0 +1,76 @@
+{-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE OverloadedStrings #-}
+
+--------------------------------------------------------------------------------
+-- |
+--  Module      :  Classh.Reflex.Utils
+--  Copyright   :  (c) 2024, Galen Sprout
+--  License     :  BSD-style (see end of this file)
+--
+--  Maintainer  :  Galen Sprout <galen.sprout@gmail.com>
+--  Stability   :  provisional
+--  Portability :  portable
+--
+--  A collection of ways to quickly place an element within a parent
+--
+-------------------------------------------------------------------------------
+
+
+
+module Classh.Reflex.Place where
+
+import Classh.Reflex.Layout
+import Reflex.Dom.Core
+import Classh
+
+
+myFunc :: WhenTW TWSizeOrFraction -> m () 
+myFunc widthResponsive = centerSimple $ divClass $(classhUnsafe [ w .~ widthResponsive ])
+
+-- box_MV_TH
+
+newtype ClassCollection tw = ClassCollection { getCollection :: [tw -> tw] }
+
+centerXY :: ClassCollection BoxConfig
+centerXY = ClassCollection [ position .~~ centered, w .~~ pct 100, h .~~ pct 100 ]
+
+centerX :: ClassCollection BoxConfig
+centerX = ClassCollection [ position .~~ centered, w .~~ pct 100 ]
+
+centerY :: ClassCollection BoxConfig
+centerY = ClassCollection [ position .~~ centered, h .~~ pct 100 ]
+
+centerSimple :: DomBuilder t m => m a -> m a 
+centerSimple = divClass $(classh' [ position .~~ centered, w .~~ pct 100, h .~~ pct 100 ])
+
+centerHSimple :: DomBuilder t m => m a -> m a 
+centerHSimple = divClass $(classh' [ position .~~ centered, w .~~ pct 100 ])
+
+centerVSimple :: DomBuilder t m => m a -> m a 
+centerVSimple = divClass $(classh' [ position .~~ centered, h .~~ pct 100 ])
+
+responsiveXPaddedRegion :: DomBuilder t m => [TWSizeOrFraction] -> m a -> m a
+responsiveXPaddedRegion opts = centerHSimple . divClass (classhUnsafe [w .|~ opts])
+
+responsiveXPaddedRegion' :: DomBuilder t m => m a -> m a 
+responsiveXPaddedRegion' = responsiveXPaddedRegion [pct 100, pct 80, pct 80, pct 80, pct 80, pct 70]
+
+
+
+-- -- | A quick way to place an element inside its parent 
+-- place
+--   :: DomBuilder t m
+--   => Dimensions
+--   -> WhenTW (Justify, Align)
+--   -> m a
+--   -> m a
+-- place boxSize whenPos ma = do
+--   elClass "div" (classhUnsafe [w .~~ (pct 100), h .~~ (pct 100), pos .~ whenPos]) $ do
+--     elClass "div" (classhUnsafe [w .~ fst boxSize, h .~ snd boxSize]) ma
+
+-- | Use grid to provide a lot of \'padding\'. This element is meant for fast prototyping only. There
+-- | are also much better variants
+xPaddedRegion :: DomBuilder t m => m a -> m a
+xPaddedRegion ma = gridCol Col12 $ divClass $(classh' [colStart .~~ 2, colSpan .~~ 10]) $ ma
+
+  
