@@ -116,3 +116,5 @@ paragraphs' ((topPadding,para):rows) = row [t .~ topPadding] para >> paragraphs'
 
 
 
+textPosition :: DomBuilder t m => CompiledS -> m a -> m a
+textPosition = divClass
