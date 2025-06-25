@@ -46,6 +46,7 @@ module Classh.Reflex.Layout where
 import Classh.Reflex.Place
 import Classh
 import Reflex.Dom.Core
+import Control.Monad
 import qualified Data.Text as T
 
 
@@ -54,6 +55,41 @@ type Mutation a = a -> a
 type MinWidth = DimensionConstraint
 type MaxWidth = DimensionConstraint
 type TargetWidth = TWSizeOrFraction
+
+-- | Centering relative to full sized containers, as constants
+centeredFullH :: [Mutation BoxConfig]
+centeredFullH = [h .~~ pct 100, pos .~~ centered]
+centeredFullW :: [Mutation BoxConfig]
+centeredFullW = [w .~~ pct 100, pos .~~ centered]
+centeredFull :: [Mutation BoxConfig]
+centeredFull = [h .~~ pct 100, w .~~ pct 100, pos .~~ centered]
+
+inline :: DomBuilder t m => m a -> m a
+inline ma = divClass (classhUnsafe [box_custom .~ "inline-block"]) ma
+
+inlines :: DomBuilder t m => [m a] -> m ()
+inlines [] = pure ()
+inlines (ma:mas) = inline ma >> inlines mas
+
+
+-- | Call as infix: topDOM `overtopOf` bottomDOM
+overtopOf :: DomBuilder t m => [TWSizeOrFraction] -> m () -> m () -> m ()
+overtopOf heights topDOM bottomDOM = do
+  -- TODO: throw compile error if its a non-static height
+  when (null heights) $ do
+    error "`overtopOf` received null list"
+  el "div" $ do
+    divClass shell_relative $ do
+      divClass shell_top $ do
+        topDOM
+      divClass shell_bottom $ do
+        bottomDOM
+  where
+    shell_relative = (classhUnsafe [ custom .~ "relative", h .|~ heights])
+    shell_top = (classhUnsafe [ custom .~ "absolute z-30", w .~~ TWSize_Full, h .|~ heights])
+    shell_bottom = (classhUnsafe [ custom .~ "absolute z-20", w .~~ TWSize_Full, h .|~ heights])
+
+
 
 -- | A generic interface to creating a centered row of some width+width constraints
 rowW :: DomBuilder t m => [(MinWidth,TargetWidth,MaxWidth)] -> (Justify, Align) -> m a -> m a 
