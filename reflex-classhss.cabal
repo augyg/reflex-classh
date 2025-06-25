@@ -28,6 +28,7 @@ library
                       Classh.Reflex.Place
     build-depends:    base
                       --^>=4.15.1.0
+                    , containers
                     , data-default
                       -->= 0.7.1 && < 0.8
                     , lens
