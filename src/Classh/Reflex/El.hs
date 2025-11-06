@@ -32,7 +32,7 @@ type Shell m a = m a -> m a
 elTW :: DomBuilder t m => T.Text -> BoxConfig -> m a -> m a
 elTW etag cfg ma = elClass etag (defaultClasses <> " " <> showTW cfg) ma
 
--- | is elClass' except that it takes a BoxConfig instead of a string for classes. 
+-- | is elClass' except that it takes a BoxConfig instead of a string for classes.
 elTW' :: DomBuilder t m => T.Text -> BoxConfig -> m a -> m (Element EventResult (DomBuilderSpace m) t, a)
 elTW' etag cfg ma = elClass' etag (defaultClasses <> " " <> showTW cfg) ma
 
@@ -59,20 +59,20 @@ in_ = divClass $(classh' [h .~~ pct 100, w .~~ pct 100])
 
 -- | Example Use Case:
 -- | divClass $(classh' [pos .~~ centered]) $ do
--- |   inH_ leaf 
+-- |   inH_ leaf
 inH_ :: DomBuilder t m => m a -> m a
 inH_ = divClass $(classh' [h .~~ pct 100])
 
 
 type PlaceHolder = T.Text
-inputEl :: DomBuilder t m => T.Text -> T.Text -> PlaceHolder -> m () 
+inputEl :: DomBuilder t m => T.Text -> T.Text -> PlaceHolder -> m ()
 inputEl elClasses textClasses placeholder = void $ inputElement $ def & inputElementConfig_elementConfig . initialAttributes .~
   ("class" =: (elClasses <&> textClasses)
   <> "placeholder" =: placeholder
   )
 
 type TextAreaRows = Int
-textAreaEl :: DomBuilder t m => TextAreaRows -> T.Text -> T.Text -> PlaceHolder -> m () 
+textAreaEl :: DomBuilder t m => TextAreaRows -> T.Text -> T.Text -> PlaceHolder -> m ()
 textAreaEl rows elClasses textClasses placeholder =
   void $ textAreaElement $ def & textAreaElementConfig_elementConfig . initialAttributes .~
   ("class" =: (elClasses <&> textClasses)
@@ -103,9 +103,9 @@ imgResponsive
   -> m ()
 imgResponsive imageInfo classes = elAttr "img" (imgSrcSet imageInfo classes) blank
 
--- example = imgResponsive (imgSrcSet [] "") 
+-- example = imgResponsive (imgSrcSet [] "")
 
---imgSrcSet 
+--imgSrcSet
 type StaticImagePath = T.Text
 type Pixels = Int
 
@@ -118,7 +118,7 @@ imgSrcSet xs classes =
 
     showMW :: DimensionConstraint -> T.Text
     showMW m_ = "(max-width: " <> showTW m_ <> ")"
-    
+
     mkFuckingAlgebraicSizes :: [(StaticImagePath, (CSSSize, DimensionConstraint))] -> T.Text
     mkFuckingAlgebraicSizes [] = error "mkFuckingAlgebraicSizes received no input"
     mkFuckingAlgebraicSizes ((_,(w_, maxW__)):xs_) =
@@ -129,4 +129,33 @@ imgSrcSet xs classes =
     "srcset" =: (T.intercalate "," pairs)
     <> "sizes" =: (mkFuckingAlgebraicSizes xs)
     <> "class" =: classes
-    
+
+divClassh :: BoxConfig -> [BoxConfig -> BoxConfig] -> Compiled Expression
+divClassh base muts = case compileS $ foldl (\acc f -> f acc) base muts of
+  Left e -> fail $ T.unpack e
+  Right styleString -> [| divClass styleString |]
+
+divClassh' :: [BoxConfig -> BoxConfig] -> Compiled Expression
+divClassh' muts = case compileS $ foldl (\acc f -> f acc) def muts of
+  Left e -> fail $ T.unpack e
+  Right styleString -> [| divClass styleString |]
+
+textClassh :: TextConfigTW -> [TextConfigTW -> TextConfigTW] -> Compiled Expression
+textClassh base muts = case compileS $ foldl (\acc f -> f acc) base muts of
+  Left e -> fail $ T.unpack e
+  Right styleString -> [| textS styleString |]
+
+textClassh' :: [TextConfigTW -> TextConfigTW] -> Compiled Expression
+textClassh' muts = case compileS $ foldl (\acc f -> f acc) def muts of
+  Left e -> fail $ T.unpack e
+  Right styleString -> [| textS styleString |]
+
+textPos' :: [TextPosition -> TextPosition] -> Compiled Expression
+textPos' muts = case compileS $ foldl (\acc f -> f acc) def muts of
+  Left e -> fail $ T.unpack e
+  Right styleString -> [| textPosition styleString |]
+
+textPos :: TextPosition -> [TextPosition -> TextPosition] -> Compiled Expression
+textPos base muts = case compileS $ foldl (\acc f -> f acc) base muts of
+  Left e -> fail $ T.unpack e
+  Right styleString -> [| textPosition styleString |]
