@@ -2,12 +2,7 @@
 , text
 , reflex-dom-core
 , pkgs
-, ClasshSS ? pkgs.haskellPackages.callPackage (pkgs.fetchFromGitHub {
-  owner = "augyg";
-  repo = "ClasshSS";
-  rev = "bb41d2a6a756180c2aed3db567c69653a495d92e";
-  sha256 = "sha256-/PB6iQqcYJWzpyEcQlI+h0DzQfg39sCwo/QzQupcEvQ=";
-}) {}
+, ClasshSS ? pkgs.haskellPackages.callCabal2nix "ClasshSS" ../ClasshSS-dev {}
 }:
 mkDerivation {
   pname = "reflex-classhss";

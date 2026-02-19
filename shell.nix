@@ -6,8 +6,10 @@ let
                        then pkgs.haskellPackages
                        else pkgs.haskell.packages.${compiler};
   variant = if doBenchmark then pkgs.haskell.lib.doBenchmark else pkgs.lib.id;
-  wikiScraper = import ./default.nix;
-  drv = variant (haskellPackages.callPackage wikiScraper {}); 
+  reflex-classh = import ./default.nix;
+  drv = variant (haskellPackages.callPackage reflex-classh {
+    ClasshSS = haskellPackages.callCabal2nix "ClasshSS" ../ClasshSS-dev {};
+  }); 
 in
 pkgs.mkShell {
   buildInputs = [ pkgs.cabal-install ];
