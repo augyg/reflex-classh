@@ -103,16 +103,16 @@ paragraphs spacing (para:paras) = do
   withTopPadding spacing paras
   where
     withTopPadding _ [] = pure ()
-    withTopPadding p_ (r_:rs_) = row [t .~ p_] r_ >> withTopPadding p_ rs_
+    withTopPadding p_ (r_:rs_) = row [t .~ fmap (\(c, v) -> (c, noTransition v)) p_] r_ >> withTopPadding p_ rs_
 
 -- | Display a number of paragraphs (where a paragraph is 1 or more sentences, with whatever crazy styling, like intercalate)
--- | with variable spacing between them, defined by the first element of the tuple, of type TWSize 
+-- | with variable spacing between them, defined by the first element of the tuple, of type TWSize
 paragraphs'
   :: DomBuilder t m
   => [(WhenTW TWSize, m ())]
   -> m ()
 paragraphs' [] = pure ()
-paragraphs' ((topPadding,para):rows) = row [t .~ topPadding] para >> paragraphs' rows
+paragraphs' ((topPadding,para):rows) = row [t .~ fmap (\(c, v) -> (c, noTransition v)) topPadding] para >> paragraphs' rows
 
 
 

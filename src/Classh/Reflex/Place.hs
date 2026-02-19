@@ -24,14 +24,14 @@ import Reflex.Dom.Core
 import Classh
 
 -- | A row of some target width to place a component/container
-placeCenterWidth :: DomBuilder t m => WhenTW TWSizeOrFraction -> m a -> m a  
-placeCenterWidth widthResponsive = centerSimple . divClass (classhUnsafe [ w .~ widthResponsive ])
+placeCenterWidth :: DomBuilder t m => WhenTW TWSizeOrFraction -> m a -> m a
+placeCenterWidth widthResponsive = centerSimple . divClass (classhUnsafe [ w .~ fmap (\(c, v) -> (c, noTransition v)) widthResponsive ])
 
 -- | A collection of classes to center horizontally and vertically
 centerXY :: ClassCollection BoxConfig
 centerXY = ClassCollection [ position .~~ centered, w .~~ pct 100, h .~~ pct 100 ]
 
--- | A collection of classes to center horizontally 
+-- | A collection of classes to center horizontally
 centerX :: ClassCollection BoxConfig
 centerX = ClassCollection [ position .~~ centered, w .~~ pct 100 ]
 
@@ -39,16 +39,16 @@ centerX = ClassCollection [ position .~~ centered, w .~~ pct 100 ]
 centerY :: ClassCollection BoxConfig
 centerY = ClassCollection [ position .~~ centered, h .~~ pct 100 ]
 
--- | A utility to easily place the element given as an arg in the center (vertically,horizontally) of its parent 
-centerSimple :: DomBuilder t m => m a -> m a 
+-- | A utility to easily place the element given as an arg in the center (vertically,horizontally) of its parent
+centerSimple :: DomBuilder t m => m a -> m a
 centerSimple = divClass $(classh' [ position .~~ centered, w .~~ pct 100, h .~~ pct 100 ])
 
--- | A utility to easily place the element given as an arg in the center (horizontally) of its parent 
-centerHSimple :: DomBuilder t m => m a -> m a 
+-- | A utility to easily place the element given as an arg in the center (horizontally) of its parent
+centerHSimple :: DomBuilder t m => m a -> m a
 centerHSimple = divClass $(classh' [ position .~~ centered, w .~~ pct 100 ])
 
--- | A utility to easily place the element given as an arg in the center (vertically) of its parent 
-centerVSimple :: DomBuilder t m => m a -> m a 
+-- | A utility to easily place the element given as an arg in the center (vertically) of its parent
+centerVSimple :: DomBuilder t m => m a -> m a
 centerVSimple = divClass $(classh' [ position .~~ centered, h .~~ pct 100 ])
 
 -- | A utility to easily place the element-arg centered between some padding 
@@ -57,7 +57,7 @@ responsiveXPaddedRegion opts = centerHSimple . divClass (classhUnsafe [w .|~ opt
 
 -- | A utility to easily place the element-arg centered between some padding, with pre-chosen values
 -- | this is really useful for prototyping
-responsiveXPaddedRegion' :: DomBuilder t m => m a -> m a 
+responsiveXPaddedRegion' :: DomBuilder t m => m a -> m a
 responsiveXPaddedRegion' = responsiveXPaddedRegion [pct 100, pct 80, pct 80, pct 80, pct 80, pct 70]
 
 
