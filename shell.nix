@@ -8,7 +8,7 @@ let
   variant = if doBenchmark then pkgs.haskell.lib.doBenchmark else pkgs.lib.id;
   reflex-classh = import ./default.nix;
   drv = variant (haskellPackages.callPackage reflex-classh {
-    #ClasshSS = pkgs.haskell.lib.doJailbreak (haskellPackages.callCabal2nix "ClasshSS" ../ClasshSS-dev {});
+    ClasshSS = pkgs.haskell.lib.doJailbreak (haskellPackages.callCabal2nix "ClasshSS" ../ClasshSS-dev {});
   }); 
 in
 pkgs.mkShell {
