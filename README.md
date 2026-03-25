@@ -1,187 +1,65 @@
-# reflex-classh
+# reflex-classhss
 
-Reflex.Dom convenience functions for ClasshSS. Provides text rendering, element wrappers, and grid layout primitives.
+ClasshSS-typed element builders for Reflex, providing a rapid UI development layer with compile-time CSS safety. Instead of passing raw Tailwind class strings to `elClass`, this library accepts `BoxConfig` and `TextConfigTW` values that are validated at compile time via ClasshSS's `classh'` Template Haskell splice.
 
-## Overview
+## Exported API Surface
 
-While ClasshSS generates class strings (library-agnostic), **reflex-classh** provides Reflex.Dom-specific utilities:
+| Module | Purpose |
+|--------|---------|
+| `Classh.Reflex` | Re-exports all four leaf modules |
+| `Classh.Reflex.El` | Typed `elClass` variants (`elTW`, `elTW'`, `elDynTW`, `elDynTW'`), bare `div_`, responsive `imgResponsive`, TH builders (`divClassh`, `textClassh`, `textPos`) |
+| `Classh.Reflex.Layout` | Grid layout: `gridCol`, `col`, `row`, `colDyn`, `colFrom`, `gridColWhen`, `rotatingBox`, `overtopOf` |
+| `Classh.Reflex.Text` | Styled text: `textS`, `dynTextS`, `textDynS`, `dynTextDynS`, `intercalate`, `paragraphs`, `paragraphs'`, `textPosition` |
+| `Classh.Reflex.Place` | Centering: `centerSimple`, `centerHSimple`, `centerVSimple`, `placeCenterWidth`, `responsiveXPaddedRegion` |
 
-- `textS`, `textPosition` - Text rendering with ClasshSS styling
-- `elTW`, `elDynTW` - Type-safe element wrappers using BoxConfig
-- `row`, `col`, `gridCol` - Grid-based responsive layout system
-- `centerSimple`, `centerHSimple` - Positioning utilities
+## Core Types and Semantics
 
-## Installation
+- **`BoxConfig`** -- ClasshSS configuration for box-model properties (spacing, colors, borders, shadows, transforms). Used with `.~~`, `.|~`, `.~^` operators.
+- **`TextConfigTW`** -- ClasshSS configuration for text properties (font, size, weight, color, decoration). Separate from `BoxConfig`; never mix in the same `classh'` call.
+- **`CompiledS`** -- The result of compile-time CSS compilation via `classh'`. A `Text` value guaranteed valid by the ClasshSS compiler.
+- **`ColInt`** -- Grid column count (Col1..Col12) for `gridCol`.
+- **`Rotation a b`** -- Controls element reordering on small screens: `CounterClockwise` or `Clockwise`.
 
-```cabal
-build-depends:
-    reflex-classhss
-  , ClasshSS
-  , reflex-dom-core
-```
+## Usage Examples
 
-## Quick Example
-
-```haskell
-{-# LANGUAGE TemplateHaskell #-}
-
-import Classh
-import Classh.Reflex
-import Reflex.Dom.Core
-
--- Responsive three-column layout
-myPage :: DomBuilder t m => m ()
-myPage =
-  row [y .~~ TWSize 10] $
-    gridCol Col12 $ do
-      col [12, 12, 4] $ textS $(classhText [text_size .~~ XL]) "Column 1"
-      col [12, 12, 4] $ textS $(classhText [text_size .~~ XL]) "Column 2"
-      col [12, 12, 4] $ textS $(classhText [text_size .~~ XL]) "Column 3"
-```
-
-**Breakdown:**
-- `row [y .~~ TWSize 10]` - Creates row with vertical spacing
-- `gridCol Col12` - 12-column grid container
-- `col [12, 12, 4]` - Responsive spans: Mobile 12, SM 12, MD 4
-
-## Core Functions
-
-### Text Rendering
+### Responsive grid layout
 
 ```haskell
--- Styled text (wraps in <span>)
-textS :: CompiledS -> Text -> m ()
-textS $(classhText [text_color .~~ Blue C500, text_size .~~ XL]) "Hello"
-
--- Text positioning (wraps in <div>)
-textPosition :: CompiledS -> m a -> m a
-textPosition $(classhTextPos [textAlign .~~ TextCenter]) $ text "Centered"
-
--- Dynamic variants
-textDynS :: Dynamic t CompiledS -> Text -> m ()
-dynTextS :: CompiledS -> Dynamic t Text -> m ()
-```
-
-### Element Wrappers
-
-```haskell
--- Like elClass but takes BoxConfig
-elTW :: Text -> BoxConfig -> m a -> m a
-elTW "div" (def & bgColor .~~ Blue C500 & p .~~ TWSize 4) $ content
-
--- Dynamic BoxConfig
-elDynTW :: Text -> Dynamic t BoxConfig -> m a -> m a
-
--- Template Haskell shortcuts
-$(divClassh' [bgColor .~~ White, p .~~ TWSize 6]) $ content
-$(textClassh' [text_color .~~ Gray C900]) "Text"
-```
-
-### Grid Layout
-
-```haskell
--- Row separator
-row :: [BoxPadding -> BoxPadding] -> m a -> m a
-row [y .~~ TWSize 10] $ content
-
--- N-column grid
-gridCol :: ColInt -> m a -> m a
-gridCol Col12 $ do
-  col [6] $ text "Left"
-  col [6] $ text "Right"
-
--- Responsive columns (mobile-first)
-col :: [Int] -> m a -> m a
-col [12, 12, 6, 4] $ content  -- Mobile: 12, SM: 12, MD: 6, LG: 4
-
--- Column with start position
-colFrom :: [(Int, Int)] -> m a -> m a
-colFrom [(2, 4)] $ content  -- Start col 2, span 4
-
--- Dynamic columns (e.g., collapsible sidebar)
-colDyn :: Dynamic t [Int] -> m a -> m a
-```
-
-### Positioning
-
-```haskell
--- Center both axes
-centerSimple :: m a -> m a
-
--- Center horizontally
-centerHSimple :: m a -> m a
-
--- Center with responsive width
-responsiveXPaddedRegion :: [TWSizeOrFraction] -> m a -> m a
-responsiveXPaddedRegion [pct 100, pct 80, pct 60] $ content
-```
-
-## Common Patterns
-
-### Card Component
-
-```haskell
-card :: DomBuilder t m => m ()
-card = elTW "div" cardStyle $ do
-  textS $(classhText [text_size .~~ XL2, text_weight .~~ Bold]) "Title"
-  textS $(classhText [text_color .~~ Gray C600]) "Description"
-  where
-    cardStyle = def
-      & bgColor .~~ White
-      & p .~~ TWSize 6
-      & br .~~ R_Lg
-      & shadow .~~ Shadow_Md
-```
-
-### Responsive Grid
-
-```haskell
-featureGrid :: DomBuilder t m => m ()
-featureGrid =
+row [y .~~ TWSize 10] $ do
   gridCol Col12 $ do
-    col [12, 12, 4] $ feature "Fast"
-    col [12, 12, 4] $ feature "Safe"
-    col [12, 12, 4] $ feature "Easy"
+    col [12, 12, 3] $ textS $(classh' [text_size .~~ XL3]) "hey"
+    col [12, 12, 4] $ textS $(classh' [text_size .~~ XL3]) "hello"
+    col [12, 12, 5] $ textS $(classh' [text_size .~~ XL3]) "howdy"
 ```
 
-### Centered Form
+### Centered content with typed box styles
 
 ```haskell
-loginForm :: DomBuilder t m => m ()
-loginForm =
-  centerSimple $
-    responsiveXPaddedRegion [pct 100, pct 60, pct 40] $
-      elTW "form" (def & bgColor .~~ White & p .~~ TWSize 8) $ do
-        textS $(classhText [text_size .~~ XL2]) "Login"
-        -- Form fields...
+centerSimple $
+  elTW "div" (def & bgColor .~~ solidColor (Blue C500) & p .~~ TWSize 4 & br .~~ R_Lg) $
+    textS $(classh' [text_color .~~ color White, text_weight .~~ Bold]) "Hello"
 ```
 
-## Comparison
+### Paragraphs with even spacing
 
-**Without reflex-classh:**
 ```haskell
-elClass "div" $(classh' [position .~~ centered, w .~~ pct 100]) $
-  elClass "span" $(classhText [text_color .~~ Blue C500]) $
-    text "Hello"
+paragraphs [noTransition (TWSize 6)] $
+  [ textS $(classh' [text_size .~~ XL2]) "First paragraph"
+  , textS $(classh' [text_size .~~ Base]) "Second paragraph"
+  ]
 ```
 
-**With reflex-classh:**
-```haskell
-centerHSimple $
-  textS $(classhText [text_color .~~ Blue C500]) "Hello"
+## Anti-patterns / Gotchas
+
+- **Never mix `BoxConfig` and `TextConfigTW`** in a single `classh'` call -- they are separate types
+- **Never use `custom .~` for properties that have type-safe equivalents** in ClasshSS
+- **Never use flexbox** -- use `gridCol`/`col`/`pos` for layout, `centerSimple` for centering
+- `imgSrcSet` calls `error` on empty input at runtime -- always pass at least one image
+
+## Build & Test
+
+```bash
+nix-shell --run "cabal clean && cabal build"   # build with henforcer checks
+nix-shell --run "cabal test"                     # run property tests
+nix-shell --run "fourmolu --check src/ test/"    # verify formatting
 ```
-
-## Modules
-
-- `Classh.Reflex.Text` - Text rendering (textS, paragraphs, intercalate)
-- `Classh.Reflex.El` - Element wrappers (elTW, divClassh')
-- `Classh.Reflex.Layout` - Grid layouts (row, col, gridCol)
-- `Classh.Reflex.Place` - Positioning (centerSimple, responsiveXPaddedRegion)
-
-## API Documentation
-
-Run `cabal haddock` or see Haddock in source files.
-
-## License
-
-BSD-style

@@ -1,0 +1,15 @@
+[forAnyModule]
+# Require all module header fields
+moduleHeaderDescriptionMustExistNonEmpty = true
+moduleHeaderCopyrightMustExistNonEmpty = true
+moduleHeaderLicenseMustExistNonEmpty = true
+moduleHeaderMaintainerMustExistNonEmpty = true
+
+# Documentation: all exports must be documented
+maximumExportsPlusHeaderUndocumented = 0
+
+# Tight open import limit — nearly everything must use explicit import lists
+allowedOpenUnaliasedImports = 2
+
+# Import aliases must be unique across a module
+allowedAliasUniqueness = { allAliasesUniqueExcept = [], note = "All import aliases must be unique" }

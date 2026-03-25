@@ -2,9 +2,11 @@ cabal-version:      2.4
 name:               reflex-classhss
 version:            0.1.0.0
 synopsis:
+        ClasshSS defined element builders for Reflex
+description:
         Using ClasshSS this module provides a number of interfaces to rapidly build UIs,
         in particular there is a focus on text and layouts
--- description:
+
 homepage:           https://github.com/augyg/ClasshSS
 license:            MIT
 license-file:       LICENSE
@@ -16,6 +18,10 @@ build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 -- extra-source-files:
 
+source-repository head
+  type:                git
+  location:            https://github.com/augyg/reflex-classhss
+
 common warnings
     ghc-options: -Wall
 
@@ -26,21 +32,17 @@ library
                       Classh.Reflex.Layout
                       Classh.Reflex.Text
                       Classh.Reflex.Place
-    build-depends:    base
-                      --^>=4.15.1.0
-                    , containers
-                    , data-default
-                      -->= 0.7.1 && < 0.8
-                    , lens
-                      -->= 5.2.3 && < 5.3
-                    , template-haskell
-                    , reflex-dom-core
-                    , ClasshSS
-                      -->= 2.17.0 && < 2.18
-                    , text
-                      -->= 1.2.5 && < 1.3
+    build-depends:    ClasshSS >= 0.1.0 && < 0.3
+                    , base >= 4.20.2 && < 4.21
+                    , containers >= 0.7 && < 0.8
+                    , data-default >= 0.8.0 && < 0.9
+                    , lens >= 5.3.5 && < 5.4
+                    , reflex-dom-core >= 0.8.1 && < 0.9
+                    , template-haskell >= 2.22.0 && < 2.23
+                    , text >= 2.1.3 && < 2.2
+                    , henforcer
     hs-source-dirs:   src
-    ghc-options: -Wall -Werror -O -threaded -fno-show-valid-hole-fits
+    ghc-options: -Wall -fno-show-valid-hole-fits -fplugin Henforcer "-fplugin-opt=Henforcer:-chenforcer.toml"
     default-language: Haskell2010
 
 test-suite setsides-test
@@ -54,3 +56,18 @@ test-suite setsides-test
                     , ClasshSS
                     , text
     default-language: Haskell2010
+
+test-suite tests
+    import:           warnings
+    type:             exitcode-stdio-1.0
+    main-is:          Main.hs
+    hs-source-dirs:   test
+    default-language: Haskell2010
+    build-depends:    base >= 4.20.2 && < 4.21
+                    , reflex-classhss
+                    , ClasshSS >= 0.1.0 && < 0.3
+                    , containers >= 0.7 && < 0.8
+                    , text >= 2.1.3 && < 2.2
+                    , hedgehog
+                    , tasty
+                    , tasty-hedgehog
